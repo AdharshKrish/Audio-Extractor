@@ -1,0 +1,16 @@
+# Archives
+*.zip
+
+# Tools
+ffmpeg-new/
+
+# Source Data (The extracted folders)
+BBT/
+Friends/
+
+# Output Folders (Wildcard matches any folder starting with BBT_)
+BBT_*/
+
+# OS Junk files (Always good to have)
+.DS_Store
+Thumbs.db
