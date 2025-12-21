@@ -14,7 +14,8 @@ FFMPEG_CMD="$HOME/workspace/ffmpeg-new/ffmpeg"
 DIR_PATH=$(dirname "$INPUT_FILE")
 NEW_DIR="${DIR_PATH/$SOURCE_DIR/$DEST_DIR}"
 FILENAME=$(basename "$INPUT_FILE" .mp3)
-OUTPUT_FILE="$NEW_DIR/$FILENAME.m4a"
+SAFE_FILENAME="${FILENAME// /_}"
+OUTPUT_FILE="$NEW_DIR/$SAFE_FILENAME.m4a"
 
 # 2. Create Directory
 mkdir -p "$NEW_DIR"
