@@ -2,17 +2,17 @@
 
 A set of high-performance shell scripts to batch compress audio files (specifically extracted from sitcoms) for optimal storage and background listening.
 
-This project uses `ffmpeg` and `GNU parallel` to process entire seasons of TV shows in minutes, reducing file sizes by **50-70%** while preserving dialogue clarity and metadata.
+This project uses `ffmpeg` and `GNU parallel` to process entire seasons of TV shows in minutes. It is optimized to run on headless servers (via SSH) and ensures processes survive network disconnections.
 
 ## Features
 
-* **Multi-Core Processing:** Uses 100% of your CPU to convert multiple episodes simultaneously.
-* **Smart Metadata Copying:** Preserves Title, Episode, and Season tags.
-* **Album Art Handling:** Includes specific fixes for cover art in MP3 and Matroska containers.
+* **Multi-Core Processing:** Saturates 100% of your CPU to convert dozens of episodes simultaneously.
+* **Smart Renaming:** Automatically sanitizes filenames for cross-platform compatibility (e.g., "BBT S01E01.mp3" -> "BBT_S01E01.m4a").
+* **Persistent Execution:** Designed to work with `tmux`, allowing long jobs to run even if you close your SSH session.
 * **Three Compression Modes:**
-1. **Universal (MP3):** 64kbps, works on any car stereo/phone, keeps Album Art.
-2. **High-Efficiency (Opus):** 40kbps, tiny files (~6MB/episode), drops Album Art for max savings.
-3. **Archival (MKA):** 40kbps Opus + Album Art (Best of both worlds, but requires VLC/MPV).
+1. **Universal (MP3):** 64kbps, ID3v2.3 tags, works on old car stereos.
+2. **High-Efficiency (Opus):** 40kbps, tiny files, optimized for modern mobile listening.
+3. **Hybrid (MKA):** 40kbps Opus + Album Art (Best of both worlds).
 
 
 
@@ -22,13 +22,13 @@ You need a Linux environment (Ubuntu/Debian) with these tools installed:
 
 ```bash
 sudo apt update
-sudo apt install ffmpeg parallel
+sudo apt install ffmpeg parallel tmux
 
 ```
 
 ## Project Structure
 
-Place your source audio files in a folder named `BBT` (or edit the scripts to match your folder name).
+Place your source audio files in a folder named `BBT` (or edit the scripts to match your source folder).
 
 ```text
 .
@@ -39,57 +39,65 @@ Place your source audio files in a folder named `BBT` (or edit the scripts to ma
 ├── run_parallel.sh      # The main execution script
 ├── worker_mp3.sh        # Worker: Converts to 64k MP3 (Max Compatibility)
 ├── worker_opus.sh       # Worker: Converts to 40k Opus (Max Space Saving)
-└── worker.sh            # Worker: Converts to 40k Opus inside .mka (Hybrid)
+└── worker.sh            # Worker: Custom/Experimental configs
 
 ```
 
 ## Usage
 
-The project is designed to run via the `run_parallel.sh` script, which feeds files to one of the "worker" scripts.
+### 1. Select your Compression Mode
 
-### 1. Select your Mode
+Open `run_parallel.sh` and edit the last line to point to the worker you want to use.
 
-Open `run_parallel.sh` and look at the last line. Change the script name to the worker you want to use:
+* **Option A: Universal (Default)** - Best for sharing or old devices.
+`... | parallel -0 --bar ./worker_mp3.sh {}`
+* **Option B: Max Efficiency** - Best for personal storage (No Album Art).
+`... | parallel -0 --bar ./worker_opus.sh {}`
 
-**For Maximum Compatibility (Default):**
+### 2. Run with Persistence (The tmux Method)
 
+Since converting hundreds of files takes time, use `tmux` to ensure the process keeps running even if your internet disconnects or you close the terminal.
+
+1. **Start a new session:**
 ```bash
-# Inside run_parallel.sh
-find BBT -type f -name "*.mp3" -print0 | parallel -0 --bar ./worker_mp3.sh {}
+tmux new -s audio_job
 
 ```
 
-**For Maximum Space Saving (No Art):**
 
-```bash
-# Inside run_parallel.sh
-find BBT -type f -name "*.mp3" -print0 | parallel -0 --bar ./worker_opus.sh {}
-
-```
-
-### 2. Run the Script
-
-Make sure scripts are executable and run the parallel runner:
-
+2. **Run the script:**
 ```bash
 chmod +x *.sh
 ./run_parallel.sh
 
 ```
 
-## Comparison of Modes
 
-| Mode | Script | Codec | Bitrate | Album Art? | File Size (20m ep) | Compatibility |
-| --- | --- | --- | --- | --- | --- | --- |
-| **Universal** | `worker_mp3.sh` | MP3 | 64k | ✅ Yes | ~9.5 MB | 100% (Cars, Old iPods) |
-| **Efficient** | `worker_opus.sh` | Opus | 40k | ❌ No | ~5.8 MB | High (Modern Phones) |
-| **Hybrid** | `worker.sh` | Opus | 40k | ✅ Yes | ~6.0 MB | Medium (VLC, MPV, Android) |
+3. **Detach (Leave it running):**
+* Press `Ctrl` + `B`, release them, then press `D`.
+* You will return to your main terminal. You can now safely close SSH.
 
-## Technical Notes
 
-* **MP3 Tagging:** The MP3 worker explicitly uses ID3v2.3 (`-id3v2_version 3`) to ensure cover art appears on Windows and older Android players.
-* **Opus & Art:** Since the `.opus` container does not support video streams (album art), the Hybrid worker uses the Matroska (`.mka`) container to legally hold both the Opus audio and the JPEG cover art.
-* **Parallelism:** The scripts use `find ... -print0 | parallel -0` to safely handle filenames containing spaces or special characters.
+4. **Re-attach (Check progress):**
+* Log back in and run:
+
+
+```bash
+tmux attach -t audio_job
+
+```
+
+
+
+## Output & Naming
+
+The scripts automatically create a new folder next to your source folder (e.g., `BBT_mp3_64k` or `BBT_opus_lite`).
+
+**Filename Sanitization:**
+Spaces in filenames are replaced with underscores to ensure compatibility with all operating systems and command-line tools.
+
+* Input: `BBT/S1/BBT S01E01.mp3`
+* Output: `BBT_mp3_64k/S1/BBT_S01E01.mp3`
 
 ## License
 
