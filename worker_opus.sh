@@ -5,7 +5,7 @@ INPUT_FILE="$1"
 
 # --- CONFIGURATION ---
 SOURCE_DIR="BBT"
-DEST_DIR="BBT_opus_m4a"
+DEST_DIR="BBT_opus_40k"
 # POINT THIS TO YOUR NEW FFMPEG FOLDER
 FFMPEG_CMD="$HOME/workspace/ffmpeg-new/ffmpeg" 
 # ---------------------
